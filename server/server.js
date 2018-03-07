@@ -15,11 +15,21 @@ app.post('/todos',(req,res)=>{
     todo.save().then((doc)=>{
       res.send(doc);
     },(e)=>{
-      res.status(400).send(e);
+      res.status(400).send(`Errors dude: ${e}`);
     });
 
 });
 
+app.get('/todos', (req,res)=>{
+  TodoTemplate.find().then((todos)=>{
+    res.send({
+      todos
+    });
+  },(er)=>{
+    res.status(400).send(er);
+  });
+
+});
 
 app.listen(3000,()=>{
   console.log("started on port 3000")
