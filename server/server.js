@@ -37,6 +37,7 @@ app.listen(3000,()=>{
 
 
 app.get('/todos/:id', (req,res)=>{
+  //res.send(req.params);
   var id = req.params.id;
   if(!ObjectID.isValid(id)){
     console.log(`Problem with id:`, id);
@@ -50,13 +51,6 @@ app.get('/todos/:id', (req,res)=>{
   },(er)=>{
     res.status(400).send('');
   });
-
-  // query findById
-    // success
-    // error  400 request not valid, send empty bodyParser
-
-  // if todo exists send it back
-  // if no todo send 404 empty body
 });
 
 module.exports = {app};
