@@ -37,13 +37,6 @@ app.delete('/todos/delete/:id',(req,res)=>{
   },(er)=>{
     res.status(400).send('');
   });
-  // get the id
-  // validate id, if invalid send 404
-  // findByIdAndRemove
-    // success in connecting
-      // if no doc, send 404
-      // if foc found, send 200 and return doc
-    // error, return 400 and empty body
 });
 
 app.get('/todos', (req,res)=>{

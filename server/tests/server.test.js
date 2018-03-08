@@ -97,3 +97,36 @@ describe('Get /todos/:id',()=>{
       .end(done);
   });
 });
+
+describe('Delete /todos/delete/:id',()=>{
+  var tempID = pretodos[1]._id.toHexString();
+  it('should remove a todo',(done)=>{
+    request(app)
+      .delete(`/todos/delete/${tempID}`)
+      .expect(200)
+      .expect((response)=>{
+        expect(response.body.todo._id).toBe(tempID);
+      })
+      .end((err,res)=>{
+        if (err) return done(err);
+        TodoTemplate.findById(tempID).then((todos)=>{
+          expect(todos).toBe(null);
+          done();
+        }).catch((e)=>done(e));
+      })
+  });
+  it('should return 404 if doc not found',(done)=>{
+    var tempFakeID = new ObjectId().toHexString();
+    request(app)
+      .delete(`/todos/delete/${tempFakeID}`)
+      .expect(404)
+      .end(done);
+  });
+
+  it('should return 404 for non object ids',(done)=>{
+    request(app)
+      .delete(`/todos/delete/01010101010`)
+      .expect(404)
+      .end(done);
+  });
+});
