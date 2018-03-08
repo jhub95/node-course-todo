@@ -23,6 +23,29 @@ app.post('/todos',(req,res)=>{
 
 });
 
+app.delete('/todos/delete/:id',(req,res)=>{
+  var id = req.params.id;
+  if(!ObjectID.isValid(id)){
+    console.log(`Problem with id:`, id);
+     return res.status(404).send('');
+  }
+  TodoTemplate.findByIdAndRemove(id).then((todo)=>{
+    if(todo == null){
+      return res.status(404).send('');
+    }
+    res.send({todo});
+  },(er)=>{
+    res.status(400).send('');
+  });
+  // get the id
+  // validate id, if invalid send 404
+  // findByIdAndRemove
+    // success in connecting
+      // if no doc, send 404
+      // if foc found, send 200 and return doc
+    // error, return 400 and empty body
+});
+
 app.get('/todos', (req,res)=>{
   TodoTemplate.find().then((todos)=>{
     res.send({
