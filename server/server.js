@@ -51,7 +51,7 @@ app.get('/todos', (req,res)=>{
 
 });
 
-app.patch('/todos/:id',(req,res)=>{
+app.patch('/todos/update/:id',(req,res)=>{
   var id = req.params.id;
   var body = _.pick(req.body,['text','completed']);
   if(!ObjectID.isValid(id)){
