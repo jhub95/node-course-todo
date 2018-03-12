@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const jwt = require('jsonwebtoken');
 const _ = require('lodash');
+const bcrypt = require('bcryptjs');
+
+
 
 const UserSchema = new mongoose.Schema(
   {
@@ -74,6 +77,23 @@ UserSchema.statics.findByToken = function(token){
   })
 
 };
+
+UserSchema.pre('save',function(next){ // a mongoose middleware for UserSchema that runs 'pre' save
+  const user = this;
+  if(user.isModified('password')){
+    //bcrypt user.password = hash VALUE
+    bcrypt.genSalt(10,(error,salt)=>{
+      bcrypt.hash(user.password,salt,(err,hash)=>{
+        console.log(`Hash: ${hash}`);
+        user.password = hash;
+        console.log("user properties: ",user);
+        next();
+      });
+    });
+  } else {
+    next();
+  }
+});
 
 var UserTemplate = mongoose.model('User',UserSchema);
 
