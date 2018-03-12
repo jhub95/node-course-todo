@@ -4,7 +4,9 @@ const bodyParser = require('body-parser');
 const {ObjectID} = require('mongodb');
 const {mongoose} = require('./db/mongoose.js');
 const {TodoTemplate} = require('./models/todo');
-const {UserTemplate} = require('./models/user')
+const {UserTemplate} = require('./models/user');
+const {authenticate} = require('./middleware/authenticate.js');
+
 var app = express();
 const _ = require('lodash');
 const port = process.env.PORT;
@@ -116,6 +118,11 @@ app.post('/users/add',(req,res)=>{
     res.status(400).send(`Errors dude: ${e}`);
   });
 
+});
+
+
+app.get('/users/me',authenticate,(req,res)=>{
+  res.send(req.user);
 });
 
 app.listen(port,()=>{
