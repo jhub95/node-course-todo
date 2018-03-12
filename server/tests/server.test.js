@@ -158,7 +158,6 @@ describe('Patch /todos:id',()=>{
     // grab id of second todo item
     const id = pretodos[1]._id.toHexString();
     const texter = 'update from testing';
-    // text is changed, completed is false, completedAt is null (.toNotExist)
     request(app)
       .patch(`/todos/update/${id}`)
       .send({'text':texter,'completed':false})
@@ -169,6 +168,6 @@ describe('Patch /todos:id',()=>{
         expect(response.body.todo.completed).toBe(false);
         expect(response.body.todo.completedAt).toBe(null);
       })
-      .end(done); 
+      .end(done);
   });
 });
