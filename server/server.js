@@ -99,8 +99,26 @@ app.get('/todos/:id', (req,res)=>{
   });
 });
 
+app.post('/users/add',(req,res)=>{
+  var postInfo = _.pick(req.body,['email','password']);
+  var newUser = new UserTemplate({
+    email: postInfo.email,
+    password: postInfo.password
+    // instead of manually adding these properties, we could just do
+    // UserTemplate(postInfo) since it contains that data anyway
+  });
+
+  newUser.save().then(()=>{
+    return newUser.generateAuthToken();
+  }).then((token)=>{
+    res.header('x-auth',token).send(newUser);
+  }).catch((e)=>{
+    res.status(400).send(`Errors dude: ${e}`);
+  });
+
+});
+
 app.listen(port,()=>{
   console.log(`started on port ${port}`);
 });
-
 module.exports = {app};
