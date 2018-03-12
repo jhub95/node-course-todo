@@ -115,7 +115,7 @@ app.post('/users/add',(req,res)=>{
   }).then((token)=>{
     res.header('x-auth',token).send(newUser);
   }).catch((e)=>{
-    res.status(400).send(`Errors dude: ${e}`);
+    res.status(400).send('');
   });
 
 });

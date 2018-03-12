@@ -84,9 +84,7 @@ UserSchema.pre('save',function(next){ // a mongoose middleware for UserSchema th
     //bcrypt user.password = hash VALUE
     bcrypt.genSalt(10,(error,salt)=>{
       bcrypt.hash(user.password,salt,(err,hash)=>{
-        console.log(`Hash: ${hash}`);
         user.password = hash;
-        console.log("user properties: ",user);
         next();
       });
     });
@@ -97,4 +95,4 @@ UserSchema.pre('save',function(next){ // a mongoose middleware for UserSchema th
 
 var UserTemplate = mongoose.model('User',UserSchema);
 
-module.exports = {UserTemplate}
+module.exports = {UserTemplate};

@@ -4,22 +4,12 @@ const {ObjectId} = require('mongodb');
 
 const app = require('./../server').app;
 const {TodoTemplate} = require('./../models/todo');
+const {UserTemplate} = require('./../models/user');
 
-const pretodos = [{
-  _id: new ObjectId(),
-  text: "first item"
-},{
-  _id: new ObjectId(),
-  text:"second item",
-  completed:true,
-  completedAt: 4444
-}];
+const {pretodos, populateTodos, preUsers, populateUsers} = require('./seed/seed.js');
 
-beforeEach((done)=>{
-  TodoTemplate.remove({}).then(()=>{
-    return TodoTemplate.insertMany(pretodos);
-  }).then(()=>done());
-});
+beforeEach(populateUsers);
+beforeEach(populateTodos);
 
 describe('Post /todos',()=>{
   it("should create a new todo",(done)=>{
@@ -168,6 +158,79 @@ describe('Patch /todos:id',()=>{
         expect(response.body.todo.completed).toBe(false);
         expect(response.body.todo.completedAt).toBe(null);
       })
+      .end(done);
+  });
+});
+
+
+describe('Get /users/me',()=>{
+  it('should return user if authenticated',(done)=>{
+    request(app)
+      .get('/users/me')
+      .set('x-auth', preUsers[0].tokens[0].token)
+      .expect(200)
+      .expect((response)=>{
+        expect(response.body._id).toBe(preUsers[0]._id.toHexString());
+        expect (response.body.email).toBe(preUsers[0].email);
+      })
+      .end(done);
+  });
+  it('should return a 401 if not authenticated', (done)=>{
+    request(app)
+      .get('/users/me')
+      .expect(401)
+      .expect((response)=>{
+        expect(response.body).toEqual({});
+      })
+      .end(done);
+  });
+});
+
+
+describe('Post /users/add', ()=>{
+  it('should create a user',(done)=>{
+    const email = 'testingOne@js.com';
+    const password = '123dad!';
+
+    request(app)
+      .post('/users/add')
+      .send({email, password})
+      .expect(200)
+      .expect((res)=>{
+        expect(res.headers['x-auth']).toExist();
+        expect(res.body._id).toExist();
+        expect(res.body.email).toBe(email);
+      })
+      .end((err)=>{
+        if(err) return done(err);
+        UserTemplate.findOne({email}).then((user)=>{
+          expect(user).toExist();
+          expect(user.password).toNotBe(password);
+          done();
+        });
+      });
+  });
+
+  it('should return validation erros if add-user request invalid',(done)=>{
+    // send invalid email, invalid password expect 401
+    const email = 'testingOne@j s.com';
+    const password = '123';
+
+    request(app)
+      .post('/users/add')
+      .send({email, password})
+      .expect(400)
+      .end(done);
+  });
+
+  it('should not create the user if provided email is already in use',(done)=>{
+    // try email that's already in use, expect 401
+    request(app)
+      .post('/users/add')
+      .send(
+        {email:preUsers[0].email, password:"preUserspassword"}
+      )
+      .expect(400)
       .end(done);
   });
 });
