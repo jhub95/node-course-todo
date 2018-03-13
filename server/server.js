@@ -15,9 +15,10 @@ const port = process.env.PORT;
 
 app.use(bodyParser.json());
 
-app.post('/todos',(req,res)=>{
+app.post('/todos',authenticate,(req,res)=>{
     var todo = new TodoTemplate({
-      text: req.body.text
+      text: req.body.text,
+      _creator: req.user._id
     });
 
     todo.save().then((doc)=>{
@@ -28,24 +29,27 @@ app.post('/todos',(req,res)=>{
 
 });
 
-app.delete('/todos/delete/:id',(req,res)=>{
+app.delete('/todos/delete/:id', authenticate, (req,res)=>{
   var id = req.params.id;
   if(!ObjectID.isValid(id)){
     console.log(`Problem with id:`, id);
      return res.status(404).send('');
   }
-  TodoTemplate.findByIdAndRemove(id).then((todo)=>{
-    if(todo == null){
-      return res.status(404).send('');
-    }
+  TodoTemplate.findOneAndRemove({
+    _id:id,
+    _creator: req.user._id
+  }).then((todo)=>{
+    if(todo == null) return res.status(404).send('');
     res.send({todo});
   },(er)=>{
     res.status(400).send('');
   });
 });
 
-app.get('/todos', (req,res)=>{
-  TodoTemplate.find().then((todos)=>{
+app.get('/todos', authenticate, (req,res)=>{
+  TodoTemplate.find({
+    _creator: req.user._id
+  }).then((todos)=>{
     res.send({
       todos
     });
@@ -55,7 +59,7 @@ app.get('/todos', (req,res)=>{
 
 });
 
-app.patch('/todos/update/:id',(req,res)=>{
+app.patch('/todos/update/:id', authenticate, (req,res)=>{
   var id = req.params.id;
   var body = _.pick(req.body,['text','completed']);
   if(!ObjectID.isValid(id)){
@@ -68,31 +72,33 @@ app.patch('/todos/update/:id',(req,res)=>{
     body.completed = false;
     body.completedAt = null;
   }
-
-  TodoTemplate.findByIdAndUpdate(id,{
+  TodoTemplate.findOneAndUpdate({
+    _id:id,
+    _creator: req.user._id
+  },{
       $set:body
     },{
       new: true
   }).then((todo)=>{
     if(!todo) return res.status(404).send('');
-    res.send({
-      todo
-    });
+    res.send({todo});
   },(er)=>{
     res.status(400).send(er);
   });
-
 });
 
 
-app.get('/todos/:id', (req,res)=>{
+app.get('/todos/:id', authenticate, (req,res)=>{
   //res.send(req.params);
   var id = req.params.id;
   if(!ObjectID.isValid(id)){
     console.log(`Problem with id:`, id);
      return res.status(404).send('');
   }
-  TodoTemplate.findById(id).then((todo)=>{
+  TodoTemplate.findOne({
+    _id:id,
+    _creator: req.user._id
+  }).then((todo)=>{
     if(todo == null){
       return res.status(404).send('');
     }

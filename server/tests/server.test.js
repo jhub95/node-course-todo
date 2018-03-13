@@ -14,9 +14,9 @@ beforeEach(populateTodos);
 describe('Post /todos',()=>{
   it("should create a new todo",(done)=>{
     var text = 'Text todo testing';
-
     request(app)
       .post('/todos')
+      .set('x-auth', preUsers[0].tokens[0].token)
       .send({
         text
       })
@@ -38,6 +38,7 @@ describe('Post /todos',()=>{
   it('should not create todo with bad data',(done)=>{
     request(app)
       .post('/todos')
+      .set('x-auth', preUsers[0].tokens[0].token)
       .send({})
       .expect(400)
       .end((err,response)=>{
@@ -51,13 +52,14 @@ describe('Post /todos',()=>{
   });
 });
 
-describe('Get all /todos route',()=>{
+describe('Get users all /todos route',()=>{
   it('should get all todos', (done)=>{
     request(app)
       .get('/todos')
+      .set('x-auth', preUsers[0].tokens[0].token)
       .expect(200)
       .expect((res)=>{
-        expect(res.body.todos.length).toBe(2);
+        expect(res.body.todos.length).toBe(1);
       })
       .end(done);
   });
@@ -67,6 +69,7 @@ describe('Get by id /todos/:id',()=>{
   it('should return todo doc',(done)=>{
     request(app)
       .get(`/todos/${pretodos[0]._id.toHexString()}`)
+      .set('x-auth', preUsers[0].tokens[0].token)
       .expect(200)
       .expect((res)=>{
         expect(res.body.todo.text).toBe(pretodos[0].text);
@@ -74,10 +77,19 @@ describe('Get by id /todos/:id',()=>{
       .end(done);
     });
 
+  it('should not return todo created by other user',(done)=>{
+    request(app)
+      .get(`/todos/${pretodos[1]._id.toHexString()}`)
+      .set('x-auth', preUsers[0].tokens[0].token)
+      .expect(404)
+      .end(done);
+    });
+
   it('should return 404 if doc not found',(done)=>{
     var tempID = new ObjectId().toHexString();
     request(app)
       .get(`/todos/${tempID}`)
+      .set('x-auth', preUsers[0].tokens[0].token)
       .expect(404)
       .end(done);
   });
@@ -85,16 +97,19 @@ describe('Get by id /todos/:id',()=>{
   it('should return 404 for non object ids',(done)=>{
     request(app)
       .get(`/todos/01010101010`)
+      .set('x-auth', preUsers[0].tokens[0].token)
       .expect(404)
       .end(done);
   });
 });
 
 describe('Delete /todos/delete/:id',()=>{
-  var tempID = pretodos[1]._id.toHexString();
+
   it('should remove a todo',(done)=>{
+    let tempID = pretodos[1]._id.toHexString();
     request(app)
       .delete(`/todos/delete/${tempID}`)
+      .set('x-auth', preUsers[1].tokens[0].token)
       .expect(200)
       .expect((response)=>{
         expect(response.body.todo._id).toBe(tempID);
@@ -107,10 +122,27 @@ describe('Delete /todos/delete/:id',()=>{
         }).catch((e)=>done(e));
       })
   });
+
+  it('should not remove someone elses todo',(done)=>{
+    let tempID = pretodos[0]._id.toHexString();
+    request(app)
+      .delete(`/todos/delete/${tempID}`)
+      .set('x-auth', preUsers[1].tokens[0].token)
+      .expect(404)
+      .end((err,res)=>{
+        if (err) return done(err);
+        TodoTemplate.findById(tempID).then((todos)=>{
+          expect(todos).toExist();
+          done();
+        }).catch((e)=>done(e));
+      })
+  });
+
   it('should return 404 if doc not found',(done)=>{
     var tempFakeID = new ObjectId().toHexString();
     request(app)
       .delete(`/todos/delete/${tempFakeID}`)
+      .set('x-auth', preUsers[1].tokens[0].token)
       .expect(404)
       .end(done);
   });
@@ -118,6 +150,7 @@ describe('Delete /todos/delete/:id',()=>{
   it('should return 404 for non object ids',(done)=>{
     request(app)
       .delete(`/todos/delete/01010101010`)
+      .set('x-auth', preUsers[1].tokens[0].token)
       .expect(404)
       .end(done);
   });
@@ -125,14 +158,13 @@ describe('Delete /todos/delete/:id',()=>{
 
 
 describe('Patch /todos:id',()=>{
-  it('should update update the todo',(done)=>{
-    // get id
+
+  it('should update the todo',(done)=>{
     const id = pretodos[0]._id.toHexString();
     const texter = 'update from testing';
-    // do the patch, updating text and setting completed true, 200
-    // expect text is changed, completed is true, completedAt is a number (.toBeA(number))
     request(app)
       .patch(`/todos/update/${id}`)
+      .set('x-auth', preUsers[0].tokens[0].token)
       .send({'text':texter,'completed':true})
       .expect(200)
       .expect((response)=>{
@@ -144,12 +176,24 @@ describe('Patch /todos:id',()=>{
       .end(done);
   });
 
+  it('should not update someone elses todo',(done)=>{
+    const id = pretodos[0]._id.toHexString();
+    const texter = 'update from testing';
+    request(app)
+      .patch(`/todos/update/${id}`)
+      .set('x-auth', preUsers[1].tokens[0].token)
+      .send({'text':texter,'completed':true})
+      .expect(404)
+      .end(done);
+  });
+
   it('should clear comletedAt when is todo is not completd',(done)=>{
     // grab id of second todo item
     const id = pretodos[1]._id.toHexString();
     const texter = 'update from testing';
     request(app)
       .patch(`/todos/update/${id}`)
+      .set('x-auth', preUsers[1].tokens[0].token)
       .send({'text':texter,'completed':false})
       .expect(200)
       .expect((response)=>{
@@ -249,7 +293,7 @@ describe('Post /users/login',()=>{
       .end((err,res)=>{
         if (err) return done(err);
         UserTemplate.findById(preUsers[1]._id).then((user)=>{
-            expect(user.tokens[0]).toInclude({
+            expect(user.tokens[1]).toInclude({
               access:'auth',
               token: res.headers['x-auth']
             });
@@ -270,7 +314,7 @@ describe('Post /users/login',()=>{
       .end((err,res)=>{
         if (err) return done(err);
         UserTemplate.findById(preUsers[1]._id).then((user)=>{
-            expect(user.tokens.length).toBe(0);
+            expect(user.tokens.length).toBe(1);
             done();
         }).catch((e)=>done(e));
       });
