@@ -207,7 +207,7 @@ describe('Post /users/add', ()=>{
           expect(user).toExist();
           expect(user.password).toNotBe(password);
           done();
-        });
+        }).catch((e)=>done(e));
       });
   });
 
@@ -232,5 +232,47 @@ describe('Post /users/add', ()=>{
       )
       .expect(400)
       .end(done);
+  });
+});
+
+describe('Post /users/login',()=>{
+  it('should login in user and return x-auth token',(done)=>{
+    request(app)
+      .post('/users/login')
+      .send({
+        email:preUsers[1].email, password:preUsers[1].password
+      })
+      .expect(200)
+      .expect((response)=>{
+        expect (response.headers['x-auth']).toExist();
+      })
+      .end((err,res)=>{
+        if (err) return done(err);
+        UserTemplate.findById(preUsers[1]._id).then((user)=>{
+            expect(user.tokens[0]).toInclude({
+              access:'auth',
+              token: res.headers['x-auth']
+            });
+            done();
+        }).catch((e)=>done(e));
+      });
+  });
+  it('should reject invalid login',(done)=>{
+    request(app)
+      .post('/users/login')
+      .send({
+        email:preUsers[1].email, password:'erroneous password'
+      })
+      .expect(400)
+      .expect((response)=>{
+        expect (response.headers['x-auth']).toNotExist();
+      })
+      .end((err,res)=>{
+        if (err) return done(err);
+        UserTemplate.findById(preUsers[1]._id).then((user)=>{
+            expect(user.tokens.length).toBe(0);
+            done();
+        }).catch((e)=>done(e));
+      });
   });
 });
