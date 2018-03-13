@@ -75,7 +75,19 @@ UserSchema.statics.findByToken = function(token){
     'tokens.token':token,
     'tokens.access': 'auth'
   })
+};
 
+UserSchema.statics.findByCredentials = function(email,password) {
+  var User  = this;
+  return User.findOne({email}).then((user)=>{
+    if(!user) return Promise.reject();
+    return new Promise ((resolve,reject)=>{
+      bcrypt.compare(password,user.password,(err,response)=>{
+        if(response) resolve(user);
+        else reject(err);
+      });
+    });
+  });
 };
 
 UserSchema.pre('save',function(next){ // a mongoose middleware for UserSchema that runs 'pre' save
